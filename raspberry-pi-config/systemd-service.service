@@ -1,0 +1,53 @@
+[Unit]
+Description=IEC 62443-3-3 Analyzer for Raspberry Pi
+Documentation=https://github.com/almigam/iec62443-analyzer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=analyzer
+Group=analyzer
+WorkingDirectory=/opt/analyzer
+
+# Main service executable
+ExecStart=/opt/analyzer/analyzer
+
+# Service restart policy (FR7 - Resource Availability)
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/analyzer/data /opt/analyzer/logs /opt/analyzer/certs
+
+# Resource limits (FR7 - Resource Availability)
+MemoryLimit=512M
+CPUQuota=75%
+MemoryAccounting=true
+TasksMax=256
+
+# Logging (FR6 - Timely Response to Events)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=iec62443-analyzer
+
+# Environment variables
+Environment="ENV=production"
+Environment="PORT=443"
+Environment="DB_PATH=/opt/analyzer/data/iec62443.db"
+Environment="TLS_CERT=/opt/analyzer/certs/server.crt"
+Environment="TLS_KEY=/opt/analyzer/certs/server.key"
+Environment="LOG_DIR=/opt/analyzer/logs"
+
+# Socket activation with timeouts
+TimeoutStartSec=30
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

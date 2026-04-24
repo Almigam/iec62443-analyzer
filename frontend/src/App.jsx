@@ -1,17 +1,36 @@
 import { useState } from "react"
+import { AnalyzerAPI } from "./api/client"
 import Dashboard from "./components/Dashboard"
 import ScanResults from "./components/ScanResults"
 import Header from "./components/Header"
+
+const API_BASE = import.meta.env.VITE_API_URL || "https://localhost"
 
 export default function App() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("dashboard")
+  const [authToken, setAuthToken] = useState(localStorage.getItem("auth_token"))
 
   const runScan = async (fr = "all") => {
     setLoading(true)
     try {
-      const res = await fetch(`http://localhost:8000/api/scan/${fr}`)
+      const headers = {
+        "Content-Type": "application/json",
+      }
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`
+      }
+      const res = await fetch(`${API_BASE}/api/scan/${fr}`, { headers })
+      if (!res.ok) {
+        if (res.status === 401) {
+          setAuthToken(null)
+          localStorage.removeItem("auth_token")
+          alert("Sesión expirada. Por favor, inicie sesión nuevamente.")
+          return
+        }
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
       const data = await res.json()
       setResults(data)
       setActiveTab("results")
@@ -22,9 +41,14 @@ export default function App() {
     }
   }
 
+  const handleLogout = () => {
+    setAuthToken(null)
+    localStorage.removeItem("auth_token")
+  }
+
   return (
     <div className="app">
-      <Header />
+      <Header onLogout={handleLogout} isAuthenticated={!!authToken} />
       <nav className="nav-tabs">
         <button
           className={activeTab === "dashboard" ? "active" : ""}

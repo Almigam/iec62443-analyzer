@@ -1,0 +1,15 @@
+.git
+.gitignore
+.github
+.env
+.env.*
+node_modules
+dist
+build
+*.log
+.DS_Store
+certs/
+data/
+logs/
+README.md
+docs/
