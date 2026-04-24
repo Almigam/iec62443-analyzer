@@ -1,0 +1,7 @@
+github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSvPWZOaM1Bt/0de6ee0TEn7RjrLeE=
+github.com/gin-gonic/gin v1.9.1 h1:4idEAncQnU5cB7BeipwiNV+yHY3DRy7I7+64DqFsQE=
+github.com/glebarez/sqlite v1.10.0 h1:u4mKDOIB7CO6O7VRc+x8X+z00+YyM91Rj0vRCIkc8=
+github.com/golang-jwt/jwt/v5 v5.2.0 h1:d/If6W7tbnTYVoAEcQKlWzoYcLzmRT+2z4fjXCRicU=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1z1KwSBH+MNDpxM=
+golang.org/x/crypto v0.21.0 h1:X31++rzVUdKhX5sWmSOVUvNm/v9/+qP/aAwpoM8i34=
+gorm.io/gorm v1.25.5 h1:zR9lOiiYE09VNvWL5Kk0GqIRcqvj8p+te/LAHQ7G8=

@@ -1,0 +1,295 @@
+Environment:  
+Industrial edge device in a small OT network (for example: a Raspberry Pi 5 acting as a secure web-based monitoring/configuration node for a production line, water treatment plant, or small factory cell).
+
+Role of the Pi:
+
+Hosts a web app (frontend + backend) used by operators/engineers on the OT network.
+
+Connects to PLCs/sensors via an internal network (no direct internet).
+
+Acts as an “edge node” that must comply with IEC 62443-3-3 foundational requirements (FR1–FR7) at system level.
+
+This fits perfectly with IEC 62443-3-3, which is aimed at industrial automation and control systems and defines system security requirements and security levels for exactly this kind of device. 
+
+2. OS and platform choices
+Base OS: Raspberry Pi OS (64-bit), hardened for OT use.
+
+Key hardening steps (you can describe these in your report, even if you don’t fully implement all):
+
+Minimal install: remove unused packages, disable GUI if not needed.
+
+User management: disable pi default user, create named accounts, enforce strong passwords.
+
+Network hardening:
+
+Use ufw/iptables to only allow HTTPS (and maybe SSH from a management subnet).
+
+Disable unused services (Avahi, SSH password login, etc.).
+
+Crypto & updates:
+
+Enforce TLS for the web app.
+
+Regular OS updates, unattended-upgrades if acceptable.
+
+Logging & monitoring:
+
+System logs (journald), web app logs, and security logs stored and rotated.
+
+You can explicitly say: “The Raspberry Pi OS is configured as an industrial edge node within an IEC 62443 zone, with restricted conduits and hardened services.” 
+
+3. Tech stack: language “best suited” for this environment
+For an industrial edge device that must be:
+
+Long-running
+
+Efficient on limited hardware
+
+Strong on concurrency and networking
+
+Less prone to memory errors
+
+a very defensible choice is:
+
+Backend: Go (Golang)
+
+Compiled, single binary, low memory footprint.
+
+Good standard library for HTTP, TLS, and concurrency.
+
+Easier to learn and implement quickly than Rust, but still robust.
+
+Frontend:
+
+Any SPA framework is fine (React, Vue, Svelte). For the exercise, you can just say React.
+
+Served as static files by the Go backend.
+
+Database:
+
+PostgreSQL or SQLite (for a single-node Pi, SQLite is acceptable and simpler).
+
+You can phrase it like:
+
+“Go is chosen for the backend because it provides a secure, efficient, and maintainable runtime suitable for an industrial edge device with long uptime requirements.”
+
+4. Architecture of the web app
+High-level:
+
+Frontend (React):
+
+UI for:
+
+User login and role-based access.
+
+Viewing system status and logs.
+
+Viewing results of FR1–FR7 analyzers.
+
+Backend (Go):
+
+REST API over HTTPS.
+
+Authentication & authorization.
+
+“Analyzer” modules for each FR (1–7).
+
+Periodic background jobs to collect metrics/logs.
+
+Local storage:
+
+DB tables for users, roles, logs, analyzer results, configuration.
+
+5. Analyzers for FR1–FR7 (what your program should do)
+Below is the core of your exercise: for each FR, what does your analyzer check?  
+You don’t need to implement every check perfectly, but you should design them clearly.
+
+FR1 – Identification and Authentication Control (IAC)
+Goal: Only authenticated, identified users/systems can access the web app.
+
+Analyzer ideas (Go backend):
+
+Check user database:
+
+No default accounts (e.g., admin/admin, pi/pi).
+
+All users have unique usernames and password hashes (e.g., bcrypt).
+
+Check auth configuration:
+
+Password length policy (e.g., ≥ 12 chars).
+
+Lockout after N failed attempts (stored in DB).
+
+Check TLS:
+
+Verify that the web app is only exposed via HTTPS (config flag, port check).
+
+Output example:
+
+“FR1: PASS – 3 users, no default accounts, HTTPS enabled, password policy OK”
+
+“FR1: WARN – Found user ‘admin’ with weak password hash algorithm (MD5).”
+
+FR2 – Use Control (UC)
+Goal: Control what authenticated users are allowed to do.
+
+Analyzer ideas:
+
+Role-based access control (RBAC):
+
+Roles: Operator, Engineer, Admin.
+
+Check that:
+
+Only Admin can manage users.
+
+Only Engineer/Admin can change system configuration.
+
+Operator is read-only for critical settings.
+
+Analyzer checks:
+
+Scan DB for users without roles.
+
+Detect roles with “too many” permissions (e.g., a role that can do everything).
+
+Ensure at least one Admin exists, but not too many.
+
+Output example:
+
+“FR2: PASS – 1 Admin, 2 Operators, permissions consistent with policy.”
+
+“FR2: FAIL – User ‘operator1’ has admin-level permissions.”
+
+FR3 – System Integrity (SI)
+Goal: Protect against unauthorized modification of the system or application.
+
+Analyzer ideas:
+
+File integrity:
+
+Maintain a list of critical files (Go binary, config files, TLS certs).
+
+Store their hashes in DB.
+
+Analyzer recomputes hashes and compares.
+
+Config integrity:
+
+Check that configuration is only modifiable via authenticated API calls (not world-writable files).
+
+Update integrity:
+
+Optionally verify that the app version matches a signed manifest.
+
+Output example:
+
+“FR3: PASS – All monitored binaries and configs match expected hashes.”
+
+“FR3: FAIL – Binary hash mismatch for ‘webapp’ (possible tampering).”
+
+FR4 – Data Confidentiality (DC)
+Goal: Prevent unauthorized disclosure of data.
+
+Analyzer ideas:
+
+Transport security:
+
+Confirm HTTPS is enabled and HTTP is disabled.
+
+At-rest protection:
+
+Check that sensitive fields (passwords, API keys) are hashed or encrypted in DB.
+
+Access paths:
+
+Ensure no debug endpoints exposing secrets (e.g., /debug/config).
+
+Output example:
+
+“FR4: PASS – HTTPS enforced, passwords hashed, no debug endpoints detected.”
+
+“FR4: WARN – API key stored in plaintext in configuration table.”
+
+FR5 – Restricted Data Flow (RDF)
+Goal: Limit communications to what is strictly necessary.
+
+Analyzer ideas:
+
+Network configuration:
+
+Check firewall rules (e.g., parse iptables output) to ensure:
+
+Only port 443 (HTTPS) is open externally.
+
+Only specific internal IPs/ports are allowed for PLC/sensor communication.
+
+App-level restrictions:
+
+Verify that the backend only connects to configured internal endpoints (no arbitrary outbound connections).
+
+Output example:
+
+“FR5: PASS – External ports restricted to 443, internal OT subnet only.”
+
+“FR5: FAIL – Port 80 and 22 open to 0.0.0.0/0.”
+
+FR6 – Timely Response to Events (TRE)
+Goal: Detect and react to security-relevant events.
+
+Analyzer ideas:
+
+Log inspection:
+
+Scan logs for:
+
+Multiple failed logins.
+
+Access from unknown IP ranges.
+
+Integrity check failures.
+
+Alerting logic:
+
+Mark events as INFO, WARN, CRITICAL.
+
+Optionally expose a simple “alerts” page in the frontend.
+
+Response policy:
+
+For the exercise, you can implement:
+
+Account lockout after N failed logins.
+
+Flag in DB to require admin review.
+
+Output example:
+
+“FR6: WARN – 12 failed login attempts for user ‘operator2’ in last 10 minutes (account locked).”
+
+FR7 – Resource Availability (RA)
+Goal: Keep the system available even under stress or partial failure.
+
+Analyzer ideas:
+
+Resource monitoring:
+
+Periodically sample CPU, RAM, disk usage (via Go).
+
+Check for thresholds (e.g., disk > 90%, RAM > 80%).
+
+Service health:
+
+Self-check endpoints (/healthz) for DB connectivity, internal services.
+
+DoS resilience (basic):
+
+Rate limiting on login and critical endpoints.
+
+Output example:
+
+“FR7: PASS – CPU 23%, RAM 45%, disk 60%, all services healthy.”
+
+“FR7: FAIL – Disk usage 95%, risk of log-induced outage.”
+

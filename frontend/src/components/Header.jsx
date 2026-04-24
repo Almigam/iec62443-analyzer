@@ -1,4 +1,4 @@
-export default function Header() {
+export default function Header({ isAuthenticated, onLogout }) {
   return (
     <header className="header">
       <div className="header-content">
@@ -11,6 +11,11 @@ export default function Header() {
         </div>
         <div className="header-badge">
           <span>Raspberry Pi OS 64-bit</span>
+          {isAuthenticated && (
+            <button className="btn-logout" onClick={onLogout}>
+              Cerrar Sesión
+            </button>
+          )}
         </div>
       </div>
     </header>
