@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   analyzer:
     build:
@@ -9,7 +7,7 @@ services:
     ports:
       - "443:443"
     volumes:
-      - ./certs:/app/certs:ro
+      - ./certs:/app/certs
       - ./data:/app/data
       - ./logs:/app/logs
     environment:
@@ -19,7 +17,8 @@ services:
       TLS_CERT: /app/certs/server.crt
       TLS_KEY: /app/certs/server.key
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
-      ALLOWED_ORIGINS: https://localhost
+      # Si el backend espera múltiples origines, normalmente usa algo como "https://10.10.10.99,https://otro.dominio"
+      ALLOWED_ORIGINS: https://10.10.10.99
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -33,6 +32,3 @@ services:
 networks:
   ot-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 192.168.100.0/24
