@@ -2,10 +2,7 @@ package analyzers
 
 import (
 	"os"
-	"os/exec"
-	"strings"
 
-	"github.com/almigam/iec62443-analyzer/internal/auth"
 	"github.com/almigam/iec62443-analyzer/internal/models"
 	"gorm.io/gorm"
 )
@@ -37,12 +34,12 @@ func checkSR11UserAuth(db *gorm.DB) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR1.1",
-		"fr_id":        "FR1",
-		"description":  "Identification and authentication of human users",
-		"status":       status,
-		"details":      details,
-		"sl_level":     1,
+		"sr_id":       "SR1.1",
+		"fr_id":       "FR1",
+		"description": "Identification and authentication of human users",
+		"status":      status,
+		"details":     details,
+		"sl_level":    1,
 	}
 }
 
@@ -68,12 +65,12 @@ func checkSR13AccountManagement(db *gorm.DB) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR1.3",
-		"fr_id":        "FR1",
-		"description":  "User registration and de-registration",
-		"status":       status,
-		"details":      details,
-		"sl_level":     1,
+		"sr_id":       "SR1.3",
+		"fr_id":       "FR1",
+		"description": "User registration and de-registration",
+		"status":      status,
+		"details":     details,
+		"sl_level":    1,
 	}
 }
 
@@ -81,20 +78,18 @@ func checkSR14PasswordPolicy(db *gorm.DB) map[string]interface{} {
 	status := "PASS"
 	details := "Password policy enforced: minimum 12 characters, complexity required"
 
-	// In a real scenario, you'd check actual password policies
-	// This validates the system's password hashing mechanism
 	if !hasPasswordHashingEnabled(db) {
 		status = "FAIL"
 		details = "Password hashing not properly configured"
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR1.4",
-		"fr_id":        "FR1",
-		"description":  "Password management",
-		"status":       status,
-		"details":      details,
-		"sl_level":     1,
+		"sr_id":       "SR1.4",
+		"fr_id":       "FR1",
+		"description": "Password management",
+		"status":      status,
+		"details":     details,
+		"sl_level":    1,
 	}
 }
 
@@ -117,12 +112,12 @@ func checkSR15DefaultAccounts(db *gorm.DB) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR1.5",
-		"fr_id":        "FR1",
-		"description":  "Default account removal",
-		"status":       status,
-		"details":      details,
-		"sl_level":     2,
+		"sr_id":       "SR1.5",
+		"fr_id":       "FR1",
+		"description": "Default account removal",
+		"status":      status,
+		"details":     details,
+		"sl_level":    2,
 	}
 }
 
@@ -130,7 +125,6 @@ func checkSR16TLSConfiguration() map[string]interface{} {
 	status := "PASS"
 	details := "HTTPS/TLS enforced for all communications"
 
-	// Check if TLS certificates exist
 	if _, err := os.Stat("./certs/server.crt"); os.IsNotExist(err) {
 		status = "FAIL"
 		details = "TLS certificate not found"
@@ -140,12 +134,12 @@ func checkSR16TLSConfiguration() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR1.6",
-		"fr_id":        "FR1",
-		"description":  "Transport layer security (TLS)",
-		"status":       status,
-		"details":      details,
-		"sl_level":     1,
+		"sr_id":       "SR1.6",
+		"fr_id":       "FR1",
+		"description": "Transport layer security (TLS)",
+		"status":      status,
+		"details":     details,
+		"sl_level":    1,
 	}
 }
 
@@ -162,16 +156,15 @@ func checkSR17FailedLoginAttempts(db *gorm.DB) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR1.7",
-		"fr_id":        "FR1",
-		"description":  "Login attempt monitoring and account lockout",
-		"status":       status,
-		"details":      details,
-		"sl_level":     2,
+		"sr_id":       "SR1.7",
+		"fr_id":       "FR1",
+		"description": "Login attempt monitoring and account lockout",
+		"status":      status,
+		"details":     details,
+		"sl_level":    2,
 	}
 }
 
-// Helper function
 func hasPasswordHashingEnabled(db *gorm.DB) bool {
 	var user models.User
 	result := db.First(&user)
