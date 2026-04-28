@@ -3,7 +3,6 @@ package analyzers
 import (
 	"crypto/md5"
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -102,7 +101,7 @@ func checkSR33CriticalFileProtection() map[string]interface{} {
 
 // Helper to calculate file hash
 func fileHash(filepath string) (string, error) {
-	data, err := ioutil.ReadFile(filepath)
+	data, err := os.ReadFile(filepath)
 	if err != nil {
 		return "", err
 	}

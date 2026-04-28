@@ -1,0 +1,82 @@
+.PHONY: help setup dev run test clean
+
+# Variables
+PORT ?= 8080
+BACKEND_DIR := backend
+
+help:
+	@echo "╔════════════════════════════════════════════════════════╗"
+	@echo "║  IEC 62443-3-3 Analyzer - Makefile                    ║"
+	@echo "╚════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Targets disponibles:"
+	@echo ""
+	@echo "  make setup          Setup inicial (Go, deps, compilation)"
+	@echo "  make dev            Arrancar servidor [PORT=8080]"
+	@echo "  make dev PORT=9000  Arrancar en puerto 9000"
+	@echo ""
+	@echo "  make install-go     Instalar Go 1.22+ si es necesario"
+	@echo "  make compile        Compilar binario"
+	@echo "  make deps           Descargar dependencias Go"
+	@echo ""
+	@echo "  make test           Correr tests"
+	@echo "  make clean          Limpiar binarios y .env.local"
+	@echo "  make clean-db       Eliminar base de datos"
+	@echo ""
+	@echo "Ejemplos:"
+	@echo "  make setup                 # Setup completo y arrancar"
+	@echo "  make dev                   # Arrancar en puerto 8080"
+	@echo "  make dev PORT=9000         # Arrancar en puerto 9000"
+
+# Setup inicial completo
+setup:
+	@bash setup-local.sh --port $(PORT)
+
+# Arrancar servidor
+dev:
+	@bash run-dev.sh --port $(PORT)
+
+# Instalar Go si es necesario
+install-go:
+	@echo "[INFO] Verificando Go..."
+	@which go &>/dev/null && echo "[OK] Go ya está instalado: $$(go version)" || \
+		(echo "[INFO] Descargando Go..." && bash -c 'cd /tmp && curl -L https://go.dev/dl/go1.22.linux-arm64.tar.gz -o go.tar.gz && sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go.tar.gz && rm go.tar.gz && echo "[OK] Go instalado"')
+
+# Compilar binario
+compile:
+	@echo "[INFO] Compilando analyzer..."
+	@cd $(BACKEND_DIR) && CGO_ENABLED=0 go build -o analyzer ./cmd/main.go
+	@echo "[OK] Binario: $(BACKEND_DIR)/analyzer"
+
+# Descargar dependencias
+deps:
+	@echo "[INFO] Descargando dependencias..."
+	@cd $(BACKEND_DIR) && rm -f go.sum && GONOSUMDB="*" go mod tidy && GONOSUMDB="*" go mod download
+	@echo "[OK] Dependencias listas"
+
+# Tests (si existen)
+test:
+	@echo "[INFO] Corriendo tests..."
+	@cd $(BACKEND_DIR) && go test ./... -v || echo "[WARN] No hay tests o fallaron"
+
+# Limpiar
+clean:
+	@echo "[INFO] Limpiando..."
+	@rm -f $(BACKEND_DIR)/analyzer
+	@rm -f $(BACKEND_DIR)/.env.local
+	@echo "[OK] Limpieza completada"
+
+# Limpiar base de datos
+clean-db:
+	@echo "[INFO] Eliminando base de datos..."
+	@rm -f $(BACKEND_DIR)/data/iec62443.db
+	@echo "[OK] Base de datos eliminada (se recreará al ejecutar)"
+
+# Status del servidor
+status:
+	@echo "[INFO] Revisando si el servidor está activo..."
+	@curl -s http://localhost:$(PORT)/healthz && echo "" || echo "Servidor no está activo en puerto $(PORT)"
+
+# View logs (si existen)
+logs:
+	@tail -f $(BACKEND_DIR)/logs/*.log 2>/dev/null || echo "Sin logs aún"

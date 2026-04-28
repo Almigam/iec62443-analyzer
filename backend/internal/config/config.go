@@ -18,14 +18,14 @@ type Config struct {
 
 func LoadConfig() *Config {
 	return &Config{
-		Environment: getEnv("ENV", "development"),
-		Port: getEnvInt("PORT", 443),
-		DBPath: getEnv("DB_PATH", "./data/iec62443.db"),
-		TLSCert: getEnv("TLS_CERT", "./certs/server.crt"),
-		TLSKey: getEnv("TLS_KEY", "./certs/server.key"),
-		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "https://localhost"),
-		JWTSecret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
-		LogDir: getEnv("LOG_DIR", "./logs"),
+		Environment:    getEnv("ENV", "development"),
+		Port:           getEnvInt("PORT", 8080),
+		DBPath:         getEnv("DB_PATH", "./data/iec62443.db"),
+		TLSCert:        getEnv("TLS_CERT", "./certs/server.crt"),
+		TLSKey:         getEnv("TLS_KEY", "./certs/server.key"),
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost"),
+		JWTSecret:      getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		LogDir:         getEnv("LOG_DIR", "./logs"),
 	}
 }
 

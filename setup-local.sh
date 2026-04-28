@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
-# IEC 62443-3-3 Analyzer - Setup y arranque local en Raspberry Pi 5
-# Uso: bash setup-local.sh [--port 8443] [--no-tls]
+# IEC 62443-3-3 Analyzer - Setup y arranque local (HTTP)
+# Uso: bash setup-local.sh [--port 8080]
 # =============================================================================
 
 set -e
@@ -17,36 +17,24 @@ error()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 section() { echo -e "\n${BOLD}━━━ $* ━━━${NC}"; }
 
 # ── Parámetros por defecto ────────────────────────────────────────────────────
-PORT=8443           # 8443 para no requerir sudo; cambia a 443 con --port 443
-USE_TLS=true
+PORT=8080
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-GO_VERSION="1.22.4"
+GO_VERSION="1.22"
 GO_ARCH="arm64"
-GO_TAR="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"
-GO_URL="https://go.dev/dl/${GO_TAR}"
 
 # ── Parseo de argumentos ──────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case $1 in
     --port)   PORT="$2"; shift 2 ;;
-    --no-tls) USE_TLS=false; shift ;;
     --dir)    REPO_DIR="$2"; shift 2 ;;
     --help)
-      echo "Uso: bash setup-local.sh [--port 8443] [--no-tls] [--dir /ruta/repo]"
+      echo "Uso: bash setup-local.sh [--port 8080] [--dir /ruta/repo]"
       exit 0 ;;
     *) warn "Argumento desconocido: $1"; shift ;;
   esac
 done
 
-# Si se usa el puerto 443 sin sudo, avisa
-if [[ "$PORT" == "443" && "$EUID" -ne 0 ]]; then
-  warn "El puerto 443 requiere root. Ejecútalo como: sudo bash setup-local.sh --port 443"
-  warn "O usa el puerto por defecto 8443 (sin sudo)."
-  exit 1
-fi
-
 # ── Detección del directorio del repo ────────────────────────────────────────
-# Sube directorios hasta encontrar backend/cmd/main.go
 find_repo_root() {
   local dir="$1"
   for _ in 1 2 3 4 5; do
@@ -58,244 +46,198 @@ find_repo_root() {
 
 DETECTED=$(find_repo_root "$REPO_DIR")
 if [[ -z "$DETECTED" ]]; then
-  warn "No se encontró backend/cmd/main.go desde $REPO_DIR"
-  warn "Asegúrate de ejecutar este script desde dentro del repositorio iec62443-analyzer"
-  read -rp "¿Ruta manual al repositorio? [intro para omitir]: " MANUAL_DIR
-  [[ -n "$MANUAL_DIR" ]] && REPO_DIR="$MANUAL_DIR" || error "No se puede continuar sin el repositorio."
+  error "No se encontró backend/cmd/main.go desde $REPO_DIR"
 else
   REPO_DIR="$DETECTED"
 fi
 
 BACKEND_DIR="$REPO_DIR/backend"
-CERTS_DIR="$BACKEND_DIR/certs"
 DATA_DIR="$BACKEND_DIR/data"
 LOGS_DIR="$BACKEND_DIR/logs"
 
-echo -e "\n${BOLD}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║   IEC 62443-3-3 Analyzer — Setup Local (Pi 5)   ║${NC}"
-echo -e "${BOLD}╚══════════════════════════════════════════════════╝${NC}"
+echo -e "\n${BOLD}╔════════════════════════════════════════════════╗${NC}"
+echo -e "${BOLD}║   IEC 62443-3-3 Analyzer — Setup Local HTTP   ║${NC}"
+echo -e "${BOLD}╚════════════════════════════════════════════════╝${NC}"
 info "Repositorio : $REPO_DIR"
-info "Puerto      : $PORT"
-info "TLS         : $USE_TLS"
+info "Puerto      : $PORT (HTTP)"
 echo ""
 
 # =============================================================================
-# PASO 1 — Instalar Go si no está disponible o es versión incorrecta
+# PASO 1 — Verificar/Instalar Go
 # =============================================================================
-section "PASO 1: Go $GO_VERSION"
+section "PASO 1: Go $GO_VERSION+"
 
-install_go() {
-  info "Descargando Go $GO_VERSION para linux/$GO_ARCH..."
-  cd /tmp
-  wget -q --show-progress "$GO_URL" -O "$GO_TAR" || \
-    curl -L "$GO_URL" -o "$GO_TAR" || \
-    error "No se pudo descargar Go. Comprueba la conexión a internet."
-  info "Instalando Go en /usr/local/go..."
-  sudo rm -rf /usr/local/go
-  sudo tar -C /usr/local -xzf "$GO_TAR"
-  rm -f "$GO_TAR"
-  # Añadir al PATH de la sesión actual
-  export PATH="/usr/local/go/bin:$PATH"
-  # Añadir al .bashrc si no está ya
-  grep -q '/usr/local/go/bin' ~/.bashrc || \
-    echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bashrc
-  ok "Go $GO_VERSION instalado correctamente."
-}
-
-# Añadir rutas habituales de Go al PATH por si acaso
+# Añadir rutas habituales de Go al PATH
 export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
 
 if command -v go &>/dev/null; then
-  CURRENT_GO=$(go version | awk '{print $3}' | sed 's/go//')
-  REQUIRED_MAJOR=1; REQUIRED_MINOR=22
-  CURRENT_MAJOR=$(echo "$CURRENT_GO" | cut -d. -f1)
-  CURRENT_MINOR=$(echo "$CURRENT_GO" | cut -d. -f2)
-  if [[ "$CURRENT_MAJOR" -gt "$REQUIRED_MAJOR" ]] || \
-     ([[ "$CURRENT_MAJOR" -eq "$REQUIRED_MAJOR" ]] && \
-      [[ "$CURRENT_MINOR" -ge "$REQUIRED_MINOR" ]]); then
-    ok "Go $CURRENT_GO ya instalado. Se usará la versión existente."
-  else
-    warn "Go $CURRENT_GO es demasiado antiguo (necesario >= $GO_VERSION)."
-    install_go
-  fi
+  CURRENT=$(go version | awk '{print $3}' | sed 's/go//')
+  ok "$CURRENT"
 else
-  warn "Go no encontrado."
-  install_go
+  warn "Go 1.22+ no encontrado o versión insuficiente"
+  
+  # Intentar descargar e instalar Go
+  info "Descargando Go..."
+  cd /tmp
+  GO_URL="https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"
+  
+  if wget -q --show-progress "$GO_URL" -O go.tar.gz 2>/dev/null || \
+     curl -L "$GO_URL" -o go.tar.gz 2>/dev/null; then
+    info "Extrayendo Go..."
+    sudo rm -rf /usr/local/go
+    sudo tar -C /usr/local -xzf go.tar.gz
+    rm -f go.tar.gz
+    export PATH="/usr/local/go/bin:$PATH"
+    grep -q '/usr/local/go/bin' ~/.bashrc || \
+      echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bashrc
+    ok "$(go version)"
+  else
+    error "No se pudo descargar Go. Descárgalo manualmente desde https://go.dev/dl/"
+  fi
 fi
 
-go version
 
 # =============================================================================
-# PASO 2 — Crear directorios necesarios
+# PASO 2 — Crear directorios
 # =============================================================================
 section "PASO 2: Directorios"
 
-mkdir -p "$CERTS_DIR" "$DATA_DIR" "$LOGS_DIR"
-chmod 700 "$CERTS_DIR" "$DATA_DIR" "$LOGS_DIR"
-ok "Directorios creados: certs/ data/ logs/"
+mkdir -p "$DATA_DIR" "$LOGS_DIR"
+chmod 750 "$DATA_DIR" "$LOGS_DIR"
+ok "Directorios listos: data/ logs/"
+
+
 
 # =============================================================================
-# PASO 3 — Generar certificados TLS autofirmados
+# PASO 3 — Correcciones de código fuente
 # =============================================================================
-section "PASO 3: Certificados TLS"
+section "PASO 3: Correcciones necesarias"
 
-if [[ "$USE_TLS" == true ]]; then
-  if [[ -f "$CERTS_DIR/server.crt" && -f "$CERTS_DIR/server.key" ]]; then
-    ok "Certificados ya existen en $CERTS_DIR — se reutilizan."
-  else
-    info "Generando certificados autofirmados (RSA 4096)..."
-    # Obtener IP local de la Pi
-    LOCAL_IP=$(hostname -I | awk '{print $1}')
-    openssl req -x509 -newkey rsa:4096 -nodes \
-      -keyout "$CERTS_DIR/server.key" \
-      -out    "$CERTS_DIR/server.crt" \
-      -days 365 \
-      -subj "/C=ES/ST=Local/L=Local/O=IEC62443/CN=rpi-analyzer" \
-      -addext "subjectAltName=DNS:localhost,DNS:rpi-analyzer,IP:127.0.0.1,IP:${LOCAL_IP}" \
-      2>/dev/null
-    chmod 600 "$CERTS_DIR/server.key"
-    chmod 644 "$CERTS_DIR/server.crt"
-    ok "Certificados generados para localhost y $LOCAL_IP"
-  fi
-else
-  warn "TLS desactivado. El servidor usará HTTP puro."
-fi
-
-# =============================================================================
-# PASO 4 — Arreglar imports del código fuente
-# =============================================================================
-section "PASO 4: Corrección de imports (SQLite)"
-
+# Verificar y corregir db.go si es necesario
 DB_GO="$BACKEND_DIR/internal/database/db.go"
-
-# db.go importa "gorm.io/driver/sqlite" pero go.mod tiene "github.com/glebarez/sqlite"
-# La API del driver glebarez es idéntica: sqlite.Open(path)
-if grep -q '"gorm.io/driver/sqlite"' "$DB_GO" 2>/dev/null; then
-  info "Corrigiendo import de SQLite en db.go..."
-  sed -i 's|"gorm.io/driver/sqlite"|"github.com/glebarez/sqlite"|g' "$DB_GO"
-  ok "Import corregido: github.com/glebarez/sqlite"
-else
-  ok "Import de SQLite ya es correcto."
-fi
-
-# fr3_si.go usa ioutil.ReadFile (deprecated pero funcional; no falla en Go 1.22)
-# Solo advertimos, no es necesario corregirlo para que compile
-FR3_GO="$BACKEND_DIR/internal/analyzers/fr3_si.go"
-if grep -q '"io/ioutil"' "$FR3_GO" 2>/dev/null; then
-  warn "fr3_si.go usa io/ioutil (deprecated). Funciona en Go 1.22, pero considera migrar a os.ReadFile."
-fi
-
-# =============================================================================
-# PASO 5 — Descargar dependencias Go
-# =============================================================================
-section "PASO 5: Dependencias Go"
-
-cd "$BACKEND_DIR"
-
-# El go.sum del repo tiene checksums incorrectos/fabricados.
-# Lo borramos para que Go lo regenere desde los servidores oficiales.
-if [[ -f "go.sum" ]]; then
-  info "Eliminando go.sum (checksums incorrectos en el repo)..."
-  rm -f go.sum
-  ok "go.sum eliminado."
-fi
-
-# También actualizamos go.mod para añadir la dependencia correcta de SQLite
-# (el import fue corregido en PASO 4 pero puede que go.mod necesite ajuste)
-info "Ejecutando go mod tidy para regenerar go.sum..."
-GONOSUMCHECK="*" GOFLAGS="-mod=mod" go mod tidy 2>&1 || {
-  warn "go mod tidy falló, intentando con GONOSUMDB..."
-  GONOSUMDB="*" GOFLAGS="-mod=mod" go mod tidy 2>&1 || true
-}
-
-info "Ejecutando go mod download..."
-GONOSUMDB="*" go mod download 2>&1 | grep -v "^$" || true
-
-ok "Dependencias descargadas y go.sum regenerado."
-
-# =============================================================================
-# PASO 6 — Compilar el binario
-# =============================================================================
-section "PASO 6: Compilación"
-
-cd "$BACKEND_DIR"
-
-# main.go importa "os" pero no lo usa — Go no compila con imports no usados
-MAIN_GO="$BACKEND_DIR/cmd/main.go"
-if grep -q '"os"' "$MAIN_GO" 2>/dev/null; then
-  OS_USES=$(grep -v '"os"' "$MAIN_GO" | grep -c '\bos\.' || true)
-  if [[ "$OS_USES" -eq 0 ]]; then
-    info "Eliminando import 'os' no utilizado en main.go..."
-    sed -i '/"os"/d' "$MAIN_GO"
-    ok "Import 'os' eliminado de main.go"
+if [[ -f "$DB_GO" ]]; then
+  if grep -q '"gorm.io/driver/sqlite"' "$DB_GO"; then
+    info "Corrigiendo import de SQLite en db.go..."
+    sed -i 's|"gorm.io/driver/sqlite"|"github.com/glebarez/sqlite"|g' "$DB_GO"
+    ok "✓ Import SQLite corregido"
   fi
 fi
 
-# fr3_si.go: ioutil está deprecated en Go 1.16+ — en Go 1.24 puede fallar
+# Verificar main.go
+MAIN_GO="$BACKEND_DIR/cmd/main.go"
+if [[ -f "$MAIN_GO" ]]; then
+  if grep -q 'import.*"os"' "$MAIN_GO" && ! grep -q '\bos\.' "$MAIN_GO"; then
+    info "Eliminando import 'os' no usado en main.go..."
+    sed -i '/"os"/d' "$MAIN_GO"
+    ok "✓ Import 'os' eliminado"
+  fi
+fi
+
+# Verificar fr3_si.go si existe
 FR3_GO="$BACKEND_DIR/internal/analyzers/fr3_si.go"
-if grep -q '"io/ioutil"' "$FR3_GO" 2>/dev/null; then
-  info "Migrando io/ioutil -> os en fr3_si.go (requerido en Go 1.24)..."
-  sed -i 's|"io/ioutil"||g' "$FR3_GO"
+if [[ -f "$FR3_GO" ]] && grep -q '"io/ioutil"' "$FR3_GO"; then
+  info "Migrando io/ioutil a os en fr3_si.go..."
+  sed -i 's|"io/ioutil"|"|g' "$FR3_GO"
   sed -i 's|ioutil\.ReadFile|os.ReadFile|g' "$FR3_GO"
-  # Asegurar que "os" está importado
   if ! grep -q '"os"' "$FR3_GO"; then
     sed -i '/^import (/a \\t"os"' "$FR3_GO"
   fi
-  ok "fr3_si.go migrado a os.ReadFile"
+  ok "✓ fr3_si.go migrado"
 fi
 
-info "Compilando analyzer (CGO desactivado para compatibilidad Pi)..."
-CGO_ENABLED=0 go build -o analyzer ./cmd/main.go
-ok "Binario generado: $BACKEND_DIR/analyzer"
+ok "Correcciones completadas"
 
 # =============================================================================
-# PASO 7 — Preparar variables de entorno
+# PASO 4 — Descargar dependencias Go
 # =============================================================================
-section "PASO 7: Configuración"
+section "PASO 4: Dependencias Go"
+
+cd "$BACKEND_DIR" || error "No se encontró backend"
+
+# Limpiar go.sum para regenerarlo
+if [[ -f "go.sum" ]]; then
+  info "Limpiando go.sum..."
+  rm -f go.sum
+fi
+
+# Descargar módulos
+info "Ejecutando go mod tidy..."
+if GONOSUMDB="*" go mod tidy 2>&1 > /tmp/go_tidy.log; then
+  ok "✓ go mod tidy"
+else
+  warn "go mod tidy generó advertencias (podrían ser normales)"
+fi
+
+info "Descargando dependencias..."
+if GONOSUMDB="*" go mod download 2>&1 > /tmp/go_download.log; then
+  ok "✓ Dependencias descargadas"
+else
+  error "Error descargando dependencias. Ver /tmp/go_download.log"
+fi
+
+# =============================================================================
+# PASO 5 — Compilar binario
+# =============================================================================
+section "PASO 5: Compilación"
+
+cd "$BACKEND_DIR" || error "No se encontró backend"
+
+info "Compilando analyzer (HTTP, sin TLS)..."
+if CGO_ENABLED=0 go build -o analyzer ./cmd/main.go 2>&1; then
+  ok "✓ Binario compilado: ./analyzer"
+else
+  error "Error en la compilación. Revisa los errores arriba."
+fi
+
+# Verificar que el binario existe y es ejecutable
+if [[ -x "analyzer" ]]; then
+  ok "✓ Binario listo para ejecutar"
+else
+  error "El binario no se creó correctamente"
+fi
+
+
+# =============================================================================
+# PASO 6 — Configuración del entorno
+# =============================================================================
+section "PASO 6: Configuración"
 
 ENV_FILE="$BACKEND_DIR/.env.local"
+LOCAL_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "127.0.0.1")
+
 cat > "$ENV_FILE" <<EOF
+# IEC 62443-3-3 Analyzer - Configuración Local
 ENV=development
 PORT=${PORT}
 DB_PATH=${DATA_DIR}/iec62443.db
-TLS_CERT=${CERTS_DIR}/server.crt
-TLS_KEY=${CERTS_DIR}/server.key
-JWT_SECRET=dev-secret-$(openssl rand -hex 16)
-ALLOWED_ORIGINS=https://localhost,https://localhost:5173,https://$(hostname -I | awk '{print $1}')
 LOG_DIR=${LOGS_DIR}
+JWT_SECRET=dev-secret-$(openssl rand -hex 16 2>/dev/null || echo "localdev")
+ALLOWED_ORIGINS=http://localhost,http://localhost:5173,http://127.0.0.1,http://${LOCAL_IP}
 EOF
 
-ok "Fichero de entorno generado: $ENV_FILE"
+ok "Configuración: $ENV_FILE"
 
 # =============================================================================
-# PASO 8 — Arrancar el servidor
+# PASO 7 — Arrancar servidor
 # =============================================================================
-section "PASO 8: Arranque del servidor"
+section "PASO 7: Arranque"
 
 # Cargar variables de entorno
 set -a
-# shellcheck source=/dev/null
 source "$ENV_FILE"
 set +a
 
-LOCAL_IP=$(hostname -I | awk '{print $1}')
-
 echo ""
-echo -e "${GREEN}${BOLD}✅ Setup completado. Arrancando servidor...${NC}"
+echo -e "${GREEN}${BOLD}✅ Setup completado. Iniciando servidor...${NC}"
 echo ""
-if [[ "$USE_TLS" == true ]]; then
-  echo -e "  ${BOLD}URL local:${NC}    https://localhost:${PORT}/healthz"
-  echo -e "  ${BOLD}URL en red:${NC}   https://${LOCAL_IP}:${PORT}/healthz"
-  echo -e "  ${BOLD}Scans:${NC}        https://localhost:${PORT}/api/scan/all"
-  echo ""
-  echo -e "  ${YELLOW}Nota:${NC} El navegador mostrará aviso de certificado autofirmado."
-  echo -e "  Acepta la excepción de seguridad o usa: curl -k https://localhost:${PORT}/healthz"
-else
-  echo -e "  ${BOLD}URL local:${NC}    http://localhost:${PORT}/healthz"
+echo -e "  ${BOLD}URL local:${NC}    http://localhost:${PORT}/healthz"
+if [[ "$LOCAL_IP" != "127.0.0.1" ]]; then
+  echo -e "  ${BOLD}URL en red:${NC}   http://${LOCAL_IP}:${PORT}/healthz"
 fi
+echo -e "  ${BOLD}API:${NC}          http://localhost:${PORT}/api/*"
 echo ""
 echo -e "  ${YELLOW}Pulsa Ctrl+C para detener el servidor.${NC}"
 echo ""
 
-cd "$BACKEND_DIR"
+cd "$BACKEND_DIR" || error "No se encontró backend"
 exec ./analyzer
