@@ -9,13 +9,13 @@ export default defineConfig({
     https: false,
     proxy: {
       '/api': {
-        target: 'https://localhost:443',
+        target: 'https://localhost:8443',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/healthz': {
-        target: 'https://localhost:443',
+        target: 'https://localhost:8443',
         changeOrigin: true,
         secure: false,
       }
