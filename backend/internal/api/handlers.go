@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/almigam/iec62443-analyzer/internal/analyzers"
 	"github.com/almigam/iec62443-analyzer/internal/models"
@@ -20,13 +19,13 @@ func ScanFR1(db *gorm.DB) gin.HandlerFunc {
 		results := analyzers.RunFR1Checks(db)
 		saveScanResults(db, results)
 		c.JSON(http.StatusOK, gin.H{
-			"fr":            "FR1",
-			"description":   "Identification and Authentication Control",
-			"total_checks":  len(results),
-			"passed":        countStatus(results, "PASS"),
-			"failed":        countStatus(results, "FAIL"),
-			"warnings":      countStatus(results, "WARNING"),
-			"results":       results,
+			"fr":           "FR1",
+			"description":  "Identification and Authentication Control",
+			"total_checks": len(results),
+			"passed":       countStatus(results, "PASS"),
+			"failed":       countStatus(results, "FAIL"),
+			"warnings":     countStatus(results, "WARNING"),
+			"results":      results,
 		})
 	}
 }
@@ -37,13 +36,13 @@ func ScanFR2(db *gorm.DB) gin.HandlerFunc {
 		results := analyzers.RunFR2Checks(db)
 		saveScanResults(db, results)
 		c.JSON(http.StatusOK, gin.H{
-			"fr":            "FR2",
-			"description":   "Use Control",
-			"total_checks":  len(results),
-			"passed":        countStatus(results, "PASS"),
-			"failed":        countStatus(results, "FAIL"),
-			"warnings":      countStatus(results, "WARNING"),
-			"results":       results,
+			"fr":           "FR2",
+			"description":  "Use Control",
+			"total_checks": len(results),
+			"passed":       countStatus(results, "PASS"),
+			"failed":       countStatus(results, "FAIL"),
+			"warnings":     countStatus(results, "WARNING"),
+			"results":      results,
 		})
 	}
 }
@@ -54,13 +53,13 @@ func ScanFR3(db *gorm.DB) gin.HandlerFunc {
 		results := analyzers.RunFR3Checks(db)
 		saveScanResults(db, results)
 		c.JSON(http.StatusOK, gin.H{
-			"fr":            "FR3",
-			"description":   "System Integrity",
-			"total_checks":  len(results),
-			"passed":        countStatus(results, "PASS"),
-			"failed":        countStatus(results, "FAIL"),
-			"warnings":      countStatus(results, "WARNING"),
-			"results":       results,
+			"fr":           "FR3",
+			"description":  "System Integrity",
+			"total_checks": len(results),
+			"passed":       countStatus(results, "PASS"),
+			"failed":       countStatus(results, "FAIL"),
+			"warnings":     countStatus(results, "WARNING"),
+			"results":      results,
 		})
 	}
 }
@@ -71,13 +70,13 @@ func ScanFR4(db *gorm.DB) gin.HandlerFunc {
 		results := analyzers.RunFR4Checks(db)
 		saveScanResults(db, results)
 		c.JSON(http.StatusOK, gin.H{
-			"fr":            "FR4",
-			"description":   "Data Confidentiality",
-			"total_checks":  len(results),
-			"passed":        countStatus(results, "PASS"),
-			"failed":        countStatus(results, "FAIL"),
-			"warnings":      countStatus(results, "WARNING"),
-			"results":       results,
+			"fr":           "FR4",
+			"description":  "Data Confidentiality",
+			"total_checks": len(results),
+			"passed":       countStatus(results, "PASS"),
+			"failed":       countStatus(results, "FAIL"),
+			"warnings":     countStatus(results, "WARNING"),
+			"results":      results,
 		})
 	}
 }
@@ -88,13 +87,13 @@ func ScanFR5(db *gorm.DB) gin.HandlerFunc {
 		results := analyzers.RunFR5Checks(db)
 		saveScanResults(db, results)
 		c.JSON(http.StatusOK, gin.H{
-			"fr":            "FR5",
-			"description":   "Restricted Data Flow",
-			"total_checks":  len(results),
-			"passed":        countStatus(results, "PASS"),
-			"failed":        countStatus(results, "FAIL"),
-			"warnings":      countStatus(results, "WARNING"),
-			"results":       results,
+			"fr":           "FR5",
+			"description":  "Restricted Data Flow",
+			"total_checks": len(results),
+			"passed":       countStatus(results, "PASS"),
+			"failed":       countStatus(results, "FAIL"),
+			"warnings":     countStatus(results, "WARNING"),
+			"results":      results,
 		})
 	}
 }
@@ -105,13 +104,13 @@ func ScanFR6(db *gorm.DB) gin.HandlerFunc {
 		results := analyzers.RunFR6Checks(db)
 		saveScanResults(db, results)
 		c.JSON(http.StatusOK, gin.H{
-			"fr":            "FR6",
-			"description":   "Timely Response to Events",
-			"total_checks":  len(results),
-			"passed":        countStatus(results, "PASS"),
-			"failed":        countStatus(results, "FAIL"),
-			"warnings":      countStatus(results, "WARNING"),
-			"results":       results,
+			"fr":           "FR6",
+			"description":  "Timely Response to Events",
+			"total_checks": len(results),
+			"passed":       countStatus(results, "PASS"),
+			"failed":       countStatus(results, "FAIL"),
+			"warnings":     countStatus(results, "WARNING"),
+			"results":      results,
 		})
 	}
 }
@@ -122,13 +121,13 @@ func ScanFR7(db *gorm.DB) gin.HandlerFunc {
 		results := analyzers.RunFR7Checks(db)
 		saveScanResults(db, results)
 		c.JSON(http.StatusOK, gin.H{
-			"fr":            "FR7",
-			"description":   "Resource Availability",
-			"total_checks":  len(results),
-			"passed":        countStatus(results, "PASS"),
-			"failed":        countStatus(results, "FAIL"),
-			"warnings":      countStatus(results, "WARNING"),
-			"results":       results,
+			"fr":           "FR7",
+			"description":  "Resource Availability",
+			"total_checks": len(results),
+			"passed":       countStatus(results, "PASS"),
+			"failed":       countStatus(results, "FAIL"),
+			"warnings":     countStatus(results, "WARNING"),
+			"results":      results,
 		})
 	}
 }
@@ -136,7 +135,10 @@ func ScanFR7(db *gorm.DB) gin.HandlerFunc {
 // ScanAll runs all FR scans
 func ScanAll(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var allResults []map[string]interface{}
+		var flatResults []map[string]interface{}
+		totalPassed := 0
+		totalFailed := 0
+		totalWarnings := 0
 
 		for i := 1; i <= 7; i++ {
 			var results []map[string]interface{}
@@ -157,19 +159,20 @@ func ScanAll(db *gorm.DB) gin.HandlerFunc {
 				results = analyzers.RunFR7Checks(db)
 			}
 			saveScanResults(db, results)
-			allResults = append(allResults, map[string]interface{}{
-				"fr":       i,
-				"results":  results,
-				"total":    len(results),
-				"passed":   countStatus(results, "PASS"),
-				"failed":   countStatus(results, "FAIL"),
-				"warnings": countStatus(results, "WARNING"),
-			})
+			flatResults = append(flatResults, results...)
+			totalPassed += countStatus(results, "PASS")
+			totalFailed += countStatus(results, "FAIL")
+			totalWarnings += countStatus(results, "WARNING")
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"timestamp": time.Now(),
-			"scans":     allResults,
+			"fr":           "ALL",
+			"description":  "Full system scan for all FRs",
+			"total_checks": len(flatResults),
+			"passed":       totalPassed,
+			"failed":       totalFailed,
+			"warnings":     totalWarnings,
+			"results":      flatResults,
 		})
 	}
 }

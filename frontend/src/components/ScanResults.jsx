@@ -5,11 +5,21 @@ const STATUS_CONFIG = {
 }
 
 export default function ScanResults({ results }) {
+  if (!results || !Array.isArray(results.results)) {
+    return (
+      <div className="scan-results empty-state">
+        <p>No hay resultados disponibles para mostrar.</p>
+      </div>
+    )
+  }
+
+  const displayResults = results.results
+
   return (
     <div className="scan-results">
       <div className="results-header">
-        <h2>{results.fr}</h2>
-        <p>{results.total_checks} checks ejecutados</p>
+        <h2>{results.fr || "Resultados"}</h2>
+        <p>{results.total_checks || displayResults.length} checks ejecutados</p>
       </div>
 
       <div className="results-table-wrapper">
@@ -25,10 +35,11 @@ export default function ScanResults({ results }) {
             </tr>
           </thead>
           <tbody>
-            {results.results.map((r, i) => {
-              const cfg = STATUS_CONFIG[r.status]
+            {displayResults.map((r, i) => {
+              const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.FAIL
+              const details = String(r.details || "")
               return (
-                <tr key={i} className={`row-${r.status.toLowerCase()}`}>
+                <tr key={i} className={`row-${String(r.status || "unknown").toLowerCase()}`}>
                   <td><code>{r.sr_id}</code></td>
                   <td><span className="fr-badge">{r.fr_id}</span></td>
                   <td>{r.description}</td>
@@ -39,7 +50,7 @@ export default function ScanResults({ results }) {
                   </td>
                   <td><span className="sl-badge">SL{r.sl_level}</span></td>
                   <td className="details-cell">
-                    {r.details.split(" | ").map((d, j) => (
+                    {details.split(" | ").map((d, j) => (
                       <div key={j} className="detail-item">{d}</div>
                     ))}
                   </td>

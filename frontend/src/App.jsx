@@ -12,6 +12,40 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [authToken, setAuthToken] = useState(localStorage.getItem("auth_token"))
 
+  const normalizeResponse = (data) => {
+    if (!data) return null
+
+    // Soporte para backend antiguo y nuevo formato de ScanAll
+    if (Array.isArray(data.scans)) {
+      const flatResults = data.scans.flatMap((scan) => scan.results || [])
+      const totalChecks = data.scans.reduce((sum, scan) => sum + (scan.total || (scan.results || []).length), 0)
+      const passed = data.scans.reduce((sum, scan) => sum + (scan.passed || countStatus(scan.results || [], "PASS")), 0)
+      const failed = data.scans.reduce((sum, scan) => sum + (scan.failed || countStatus(scan.results || [], "FAIL")), 0)
+      const warnings = data.scans.reduce((sum, scan) => sum + (scan.warnings || countStatus(scan.results || [], "WARNING")), 0)
+      return {
+        fr: data.fr || "ALL",
+        description: data.description || "Full system scan",
+        total_checks: totalChecks,
+        passed,
+        failed,
+        warnings,
+        results: flatResults,
+      }
+    }
+
+    if (Array.isArray(data.results)) {
+      return data
+    }
+
+    return null
+  }
+
+  const countStatus = (results, status) => {
+    return results.reduce((count, item) => {
+      return count + (item.status === status ? 1 : 0)
+    }, 0)
+  }
+
   const runScan = async (fr = "all") => {
     setLoading(true)
     try {
@@ -32,7 +66,11 @@ export default function App() {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       }
       const data = await res.json()
-      setResults(data)
+      const normalized = normalizeResponse(data)
+      if (!normalized) {
+        throw new Error("Respuesta inesperada del backend")
+      }
+      setResults(normalized)
       setActiveTab("results")
     } catch (err) {
       alert("Error conectando con el backend: " + err.message)
