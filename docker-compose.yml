@@ -29,6 +29,21 @@ services:
     networks:
       - ot-network
 
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: /api
+    container_name: iec62443-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - analyzer
+    restart: unless-stopped
+    networks:
+      - ot-network
+
 networks:
   ot-network:
     driver: bridge
