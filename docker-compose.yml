@@ -5,20 +5,17 @@ services:
       dockerfile: Dockerfile
     container_name: iec62443-analyzer
     ports:
-      - "443:443"
+      - "8080:8080"
     volumes:
-      - ./certs:/app/certs
       - ./data:/app/data
       - ./logs:/app/logs
     environment:
       ENV: production
-      PORT: 443
+      PORT: 8080
       DB_PATH: /app/data/iec62443.db
-      TLS_CERT: /app/certs/server.crt
-      TLS_KEY: /app/certs/server.key
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
-      # Si el backend espera múltiples origines, normalmente usa algo como "https://10.10.10.99,https://otro.dominio"
-      ALLOWED_ORIGINS: https://10.10.10.99
+      # Orígenes permitidos para desarrollo local y Docker Compose
+      ALLOWED_ORIGINS: http://localhost,http://127.0.0.1,http://localhost:5173
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

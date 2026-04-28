@@ -39,10 +39,10 @@ RUN chmod 700 /app/certs /app/data /app/logs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider https://localhost/healthz || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1
 
-# Expose HTTPS port
-EXPOSE 443
+# Expose HTTP port
+EXPOSE 8080
 
 # Run as non-root user
 RUN addgroup -g 1000 analyzer && \
