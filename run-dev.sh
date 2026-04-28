@@ -30,7 +30,18 @@ done
 # Verificaciones
 [[ -d "$BACKEND_DIR" ]] || error "No se encontró directorio backend"
 [[ -f "$BACKEND_DIR/cmd/main.go" ]] || error "No se encontró main.go"
-[[ -f "$BACKEND_DIR/analyzer" ]] || error "El binario 'analyzer' no existe. Ejecuta primero: bash setup-local.sh"
+
+BINARY="$BACKEND_DIR/analyzer"
+if [[ ! -x "$BINARY" ]] || [[ "$BACKEND_DIR/cmd/main.go" -nt "$BINARY" ]] || [[ "$BACKEND_DIR/internal" -nt "$BINARY" ]]; then
+  info "Compilando backend..."
+  cd "$BACKEND_DIR" || error "No se puede acceder al directorio backend"
+  CGO_ENABLED=0 go build -o analyzer ./cmd/main.go || error "No se pudo compilar el backend"
+  ok "Backend compilado: $BINARY"
+fi
+
+if [[ ! -x "$BINARY" ]]; then
+  error "El binario 'analyzer' no se creó correctamente"
+fi
 
 echo -e "\n${BOLD}╔═════════════════════════════════════════╗${NC}"
 echo -e "${BOLD}║   IEC 62443 Analyzer - DEV Server       ║${NC}"
@@ -57,7 +68,10 @@ EOF
 fi
 
 # Cargar variables de entorno
-export $(cat "$ENV_FILE" | xargs)
+set -a
+# shellcheck source=/dev/null
+source "$ENV_FILE"
+set +a
 
 echo ""
 echo -e "${GREEN}${BOLD}✅ Iniciando servidor...${NC}\n"

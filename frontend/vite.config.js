@@ -9,13 +9,13 @@ export default defineConfig({
     https: false,
     proxy: {
       '/api': {
-        target: 'https://localhost:8443',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/healthz': {
-        target: 'https://localhost:8443',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       }
@@ -34,6 +34,6 @@ export default defineConfig({
     }
   },
   define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://localhost'),
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'http://localhost:8080'),
   }
 })

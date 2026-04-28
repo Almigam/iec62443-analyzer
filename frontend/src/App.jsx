@@ -4,7 +4,7 @@ import Dashboard from "./components/Dashboard"
 import ScanResults from "./components/ScanResults"
 import Header from "./components/Header"
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://localhost"
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080"
 
 export default function App() {
   const [results, setResults] = useState(null)

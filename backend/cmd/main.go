@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/almigam/iec62443-analyzer/internal/api"
@@ -31,7 +32,12 @@ func main() {
 
 	// CORS middleware for OT network
 	router.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", cfg.AllowedOrigins)
+		origin := c.GetHeader("Origin")
+		allowedOrigin := getAllowedOrigin(origin, cfg.AllowedOrigins)
+		if allowedOrigin != "" {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+		}
+		c.Writer.Header().Set("Vary", "Origin")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -68,4 +74,20 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
+}
+
+func getAllowedOrigin(requestOrigin, allowedOrigins string) string {
+	if requestOrigin == "" {
+		return ""
+	}
+
+	allowed := strings.Split(allowedOrigins, ",")
+	for _, origin := range allowed {
+		origin = strings.TrimSpace(origin)
+		if origin == "*" || origin == requestOrigin {
+			return requestOrigin
+		}
+	}
+
+	return ""
 }
