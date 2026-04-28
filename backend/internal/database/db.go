@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/almigam/iec62443-analyzer/internal/models"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 

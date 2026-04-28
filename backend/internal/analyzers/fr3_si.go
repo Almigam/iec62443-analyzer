@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 )
 
 // FR3 - System Integrity
@@ -37,12 +36,12 @@ func checkSR31FileIntegrity() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR3.1",
-		"fr_id":        "FR3",
-		"description":  "File integrity monitoring",
-		"status":       status,
-		"details":      details,
-		"sl_level":     2,
+		"sr_id":       "SR3.1",
+		"fr_id":       "FR3",
+		"description": "File integrity monitoring",
+		"status":      status,
+		"details":     details,
+		"sl_level":    2,
 	}
 }
 
@@ -52,7 +51,6 @@ func checkSR32ConfigIntegrity() map[string]interface{} {
 
 	configDir := "./data"
 	if stat, err := os.Stat(configDir); err == nil {
-		// Check directory permissions (should be restrictive: 0700 or 0750)
 		perms := stat.Mode().Perm()
 		if perms > 0750 {
 			status = "WARNING"
@@ -63,12 +61,12 @@ func checkSR32ConfigIntegrity() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR3.2",
-		"fr_id":        "FR3",
-		"description":  "Configuration and code integrity",
-		"status":       status,
-		"details":      details,
-		"sl_level":     2,
+		"sr_id":       "SR3.2",
+		"fr_id":       "FR3",
+		"description": "Configuration and code integrity",
+		"status":      status,
+		"details":     details,
+		"sl_level":    2,
 	}
 }
 
@@ -93,12 +91,12 @@ func checkSR33CriticalFileProtection() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"sr_id":        "SR3.3",
-		"fr_id":        "FR3",
-		"description":  "Protection of critical system files",
-		"status":       status,
-		"details":      details,
-		"sl_level":     2,
+		"sr_id":       "SR3.3",
+		"fr_id":       "FR3",
+		"description": "Protection of critical system files",
+		"status":      status,
+		"details":     details,
+		"sl_level":    2,
 	}
 }
 

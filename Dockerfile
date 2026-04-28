@@ -1,10 +1,11 @@
+
 # Build stage
 FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
-RUN apk add --no-cache git make
+# Install dependencies required for CGO
+RUN apk add --no-cache git make build-base
 
 # Copy go mod files
 COPY backend/go.mod backend/go.sum ./
@@ -15,17 +16,15 @@ RUN go mod download
 # Copy source code
 COPY backend/ .
 
-# Build the application
+# Build the application with CGO enabled
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o analyzer ./cmd/main.go
+
 
 # Runtime stage - Alpine for minimal image size (suitable for Raspberry Pi)
 FROM alpine:latest
 
-# Install CA certificates for HTTPS
-RUN apk --no-cache add ca-certificates
-
-# Install runtime dependencies
-RUN apk --no-cache add libc6-compat
+# Install CA certificates for HTTPS and wget for healthcheck
+RUN apk --no-cache add ca-certificates libc6-compat wget
 
 WORKDIR /app
 
